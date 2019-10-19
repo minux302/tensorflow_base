@@ -13,7 +13,7 @@ class Model:
   def placeholders(self):
     with tf.name_scope('input'):
       input_pl = tf.placeholder(tf.float32, [None, self.input_height, self.input_width, 3], name="input")
-      label_pl = tf.placeholder(tf.int32, [None], name="label")
+      label_pl = tf.placeholder(tf.int32, [1], name="label")
 
     return input_pl, label_pl
 
@@ -40,7 +40,29 @@ class Model:
     x = self._conv2d(x, 128, "conv2")
 
     x = self._flatten(x)
-    x = tf.layers.dense(x, self.class_num, activation=None)
+    x = tf.layers.dense(x, 10)
+
+    new_batch_size = 1
+    sequence_len = 3 # == batch_size for cnn input
+    hidden_num = 20
+    x = tf.reshape(x, [1, 3, 10])
+
+    cell = tf.nn.rnn_cell.BasicLSTMCell(hidden_num)
+    initial_state = cell.zero_state(new_batch_size, dtype=tf.float32)
+    xs, _ = tf.nn.dynamic_rnn(cell=cell,
+                              inputs=x,
+                              initial_state=initial_state,
+                              dtype=tf.float32,
+                              time_major=False)
+    xs = tf.transpose(xs, [1,0,2])
+    # print(output.get_shape())
+    # x = tf.gather(xs, int(xs.get_shape()[0] -1))
+    x = tf.slice(xs, [int(xs.get_shape()[0] - 1), 0, 0], [1, new_batch_size, hidden_num])
+
+    x = tf.layers.dense(x,
+                        1,
+                        use_bias=False,
+                        activation=None)
     x = tf.identity(x, name="output")
 
     return x

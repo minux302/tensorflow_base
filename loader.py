@@ -27,7 +27,8 @@ class Loader:
     ba_ids = self.indexes[from_b:to_b]
     inputs, labels = self._get_data_from_indexes(ba_ids)
 
-    return inputs, labels
+    # return inputs, labels
+    return inputs, [1]
 
   def __len__(self):
       return int(len(self.image_paths) / self.batch_size)
